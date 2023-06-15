@@ -27,7 +27,18 @@ class Product(models.Model):
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True, default=None)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # total price of all cart items
 
     def __str__(self):
         return self.user.first_name + "'s cart"
+
+
+class CartItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # product price * quantity
+
+    def __str__(self):
+        return self.product.name + " in " + self.cart.user.first_name + "'s cart"
