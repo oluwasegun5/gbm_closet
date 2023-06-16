@@ -19,6 +19,7 @@ class Product(models.Model):
                                 default=ge.ProductCategory.BAG.value)
     availability = models.CharField(max_length=8, choices=ge.ProductAvailability.choices(),
                                     default=ge.ProductAvailability.IN_STOCK.value)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
