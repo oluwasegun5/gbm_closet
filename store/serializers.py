@@ -22,6 +22,7 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = ('id', 'user', 'cart_item')
 
-    def get_cart_item(self, obj):
+    @staticmethod
+    def get_cart_item(obj):
         cart_items = CartItem.objects.filter(cart=obj)
         return CartItemSerializer(cart_items, many=True).data

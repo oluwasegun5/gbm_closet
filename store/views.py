@@ -5,14 +5,14 @@ from rest_framework.response import Response
 
 import permissions as gp
 from store.models import Product, Cart, CartItem
-from store.serializers import ProductSerializer, CartSerializer, CartItemSerializer
+from store import serializers as ss
 import utilities as gu
 from gbm_auth.models import AppUser as User
 
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.filter(is_deleted=False)
-    serializer_class = ProductSerializer
+    serializer_class = ss.ProductSerializer
     permissions = [gp.GbmAdmin, gp.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
@@ -69,7 +69,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             if not self.queryset.filter(id=product_id).exists():
                 return Response({'message': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
             product = self.queryset.get(id=product_id)
-            product.delete()
+            product.is_deleted = True
             return Response({'message': 'Product deleted successfully'}, status=status.HTTP_200_OK)
         except ValidationError as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -79,7 +79,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 class CartViewSet(viewsets.ModelViewSet):
     queryset = Cart.objects.all()
-    serializer_class = CartSerializer
+    serializer_class = ss.CartSerializer
     permissions = [gp.AllowAny]
 
     @action(methods=['post'], detail=False, url_name='add_item_to_cart', permission_classes=[gp.IsAuthenticated])
@@ -105,15 +105,15 @@ class CartViewSet(viewsets.ModelViewSet):
                 if cart_item.quantity > product.quantity:
                     return Response({'message': 'Quantity of product ordered can not be more than available quantity'},
                                     status=status.HTTP_400_BAD_REQUEST)
-                cart_item.total = cart_item.quantity * product.price
+                cart_item.price = cart_item.quantity * product.price
                 cart_item.save()
                 return Response({'message': 'Product added to cart successfully'}, status=status.HTTP_200_OK)
 
-            total_price = quantity * product.price
+            price = quantity * product.price
             if quantity > product.quantity:
                 return Response({'message': 'Quantity of product ordered can not be more than available quantity'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            CartItem.objects.create(cart=cart, product=product, quantity=quantity, total=total_price)
+            CartItem.objects.create(cart=cart, product=product, quantity=quantity, price=price)
             return Response({'message': 'Product added to cart successfully'}, status=status.HTTP_200_OK)
 
         except ValidationError as e:
@@ -132,7 +132,7 @@ class CartViewSet(viewsets.ModelViewSet):
             if not Cart.objects.filter(user=user).exists():
                 return Response({'message': 'Cart is empty'}, status=status.HTTP_200_OK)
             cart = Cart.objects.get(user=user)
-            serializer = CartSerializer(cart)
+            serializer = self.get_serializer(cart)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Cart.DoesNotExist:
             return Response({'message': 'Cart is empty'}, status=status.HTTP_200_OK)
@@ -140,3 +140,7 @@ class CartViewSet(viewsets.ModelViewSet):
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # @action(methods=['post'], detail=False, url_name='add_item_to_cart', permission_classes=[gp.IsAuthenticated])
+    # def remove_from_cart(self, request, *args, **kwargs):
+

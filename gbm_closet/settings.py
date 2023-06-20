@@ -1,3 +1,4 @@
+import datetime
 from datetime import timedelta
 from pathlib import Path
 
@@ -86,10 +87,20 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_REGISTRATION = {
     'REGISTER_VERIFICATION_ENABLED': False,
     'REGISTER_EMAIL_VERIFICATION_ENABLED': False,
-    'RESET_PASSWORD_VERIFICATION_ENABLED': False,
+    'RESET_PASSWORD_VERIFICATION_ENABLED': True,
     "REGISTER_VERIFICATION_AUTO_LOGIN": True,
     'REGISTER_SERIALIZER_PASSWORD_CONFIRM': False,
     "USER_ID_FIELD": "email",
+    'RESET_PASSWORD_VERIFICATION_PERIOD': timedelta(days=7),
+    'REGISTER_VERIFICATION_PERIOD': datetime.timedelta(days=7),
+    'VERIFICATION_FROM_EMAIL': 'Enum <no-reply@enum.africa>',
+    'RESET_PASSWORD_FAIL_WHEN_USER_NOT_FOUND': False,
+    'CHANGE_PASSWORD_SERIALIZER_PASSWORD_CONFIRM': True,
+    'SEND_RESET_PASSWORD_LINK_SERIALIZER_USE_EMAIL': True,
+
+    'REGISTER_EMAIL_VERIFICATION_URL': 'FRONT_END_AUTH_URL/verify-email/individual/',
+    'RESET_PASSWORD_VERIFICATION_URL': 'FRONT_END_AUTH_URL/reset-password/individual/',
+    'REGISTER_VERIFICATION_URL': 'FRONT_END_AUTH_URL/verify-email/individual/'
 }
 
 REST_FRAMEWORK = {
@@ -110,6 +121,8 @@ SIMPLE_JWT = {
     'VERIFYING_KEY': SECRET_KEY,
     'TOKEN_OBTAIN_SERIALIZER': 'gbm_auth.serializers.CustomTokenObtainPairSerializer',
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
