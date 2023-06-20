@@ -31,10 +31,6 @@ class ProductViewSet(viewsets.ModelViewSet):
                 return Response({'message': 'You are not authorized to perform this action'},
                                 status=status.HTTP_401_UNAUTHORIZED)
 
-            if self.queryset.filter(name=request.data.get('name')).exists():
-                return Response({'message': 'Product with this name already exists'},
-                                status=status.HTTP_400_BAD_REQUEST)
-
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -141,6 +137,32 @@ class CartViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    # @action(methods=['post'], detail=False, url_name='add_item_to_cart', permission_classes=[gp.IsAuthenticated])
-    # def remove_from_cart(self, request, *args, **kwargs):
+    @action(methods=['post'], detail=False, url_name='remove_item_from_cart', permission_classes=[gp.IsAuthenticated])
+    def remove_item_from_cart(self, request, *args, **kwargs):
+        data = request.data
+        product_id = data.get('product_id')
+        if message := gu.validate_required_fields({'product_id': product_id}):
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(email=request.user.email)
+            if not Product.objects.filter(id=product_id).exists():
+                return Response({'message': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+            product = Product.objects.get(id=product_id)
+            if not Cart.objects.filter(user=user).exists():
+                return Response({'message': 'Cart is empty'}, status=status.HTTP_200_OK)
+            cart = Cart.objects.get(user=user)
+            if not CartItem.objects.filter(cart=cart, product=product).exists():
+                return Response({'message': 'Product not found in cart'}, status=status.HTTP_404_NOT_FOUND)
+            cart_item = CartItem.objects.get(cart=cart, product=product)
+            cart_item.delete()
+            return Response({'message': 'Product removed from cart successfully'}, status=status.HTTP_200_OK)
+
+        except ValidationError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Cart.DoesNotExist:
+            return Response({'message': 'Cart is empty'}, status=status.HTTP_200_OK)
+        except Product.DoesNotExist:
+            return Response({'detail': 'product does not exists'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
